@@ -11,6 +11,7 @@ import scala.math.{E, pow}
 
 object STONP {
     case class State(
+        help:Boolean     = false,
         female:Boolean   = false,
         SpO2:Boolean     = false,
         ToC:Boolean      = false,
@@ -20,7 +21,7 @@ object STONP {
         lazy val beta_spo2:Double = if(!SpO2) 0 else 4.250
         lazy val beta_toc:Double = if(!ToC) 0 else 4.388
         lazy val beta_ntprobnp:Double = if(!NTproBNP) 0 else 5.611
-        lazy val logit = beta_female + beta_spo2 + beta_toc + beta_ntprobnp - 8.886
+        lazy val logit = beta_female + beta_spo2 + beta_toc + beta_ntprobnp - 7.938
 
         lazy val deathRate = {
             val p = pow(E, logit)
@@ -37,6 +38,7 @@ object STONP {
 
         def update(typ:String)(e:ReactEvent):Callback = {
             typ match {
+                case "help"     => $.modState(state => state.copy(help = !state.help))
                 case "sex"      => $.modState(state => state.copy(female = !state.female))
                 case "spo2"     => $.modState(state => state.copy(SpO2 = !state.SpO2))
                 case "toc"      => $.modState(state => state.copy(ToC = !state.ToC))
@@ -49,47 +51,74 @@ object STONP {
             <.div(^.className:="section",
                 <.div(^.className:="container",
                     <.div(^.className:="content",
-                        <.h1("STONP—Prediction Model for Mortality of COVID-19"),
-                        <.p("(Scoring Systems for Patients >= 75 Years of Age with 2019-Coronavirus Infected Disease)")
+                        <.h1(
+                            <.span(^.className:="icon has-text-gray",
+                                <.i(^.className:="fas fa-virus")
+                            ),
+                            " STONP--Prediction Model for In-hospital Death of Elderly COVID-19"
+                        ),
+                        <.p("(Apply to patients ≥75 Years of Age ONLY)")
                     ),
                     <.div(^.className:="columns is-multiline",
-                        <.div(^.className:="column is-half",
-                            <.div(^.className:="columns is-mobile is-gapless",
-                                <.div(^.className:="column"),
-                                <.div(^.className:="column is-one-quarter",
-                                    <.button(^.className:="button is-fullwidth is-rounded is-white", "beta")
-                                )
+                        {
+                            def title = <.div(^.className:="columns is-mobile is-gapless",
+                                <.div(^.className:="column is-5",
+                                    <.button(^.className:="button is-fullwidth is-light is-grey",
+                                        ^.onClick ==> update("help"),
+                                        <.span("Variables"),
+                                        <.span(^.className:="icon is-small has-text-info",
+                                            <.i(^.className:="fas fa-info-circle")
+                                        )
+                                    )
+                                ),
+                                if(!s.help) {
+                                    Seq(
+                                        <.div(^.className:="column is-4",
+                                            <.button(^.className:="button is-fullwidth is-light is-grey", "Value")
+                                        ),
+                                        <.div(^.className:="column is-3",
+                                            <.button(^.className:="button is-fullwidth is-light is-grey", "Beta")
+                                        )
+                                    ).toTagMod
+                                } else <.div(^.className:="column")
                             )
-                        ),
-                        <.div(^.className:="column is-half is-hidden-mobile  is-hidden-tablet-only",
-                            <.div(^.className:="columns is-mobile is-gapless",
-                                <.div(^.className:="column"),
-                                <.div(^.className:="column is-one-quarter",
-                                    <.button(^.className:="button is-fullwidth is-rounded is-white", "beta")
-                                )
-                            )
-                        ),
+
+                            Seq(
+                                <.div(^.className:="column is-half", title),
+                                <.div(^.className:="column is-half is-hidden-mobile  is-hidden-tablet-only", title),
+                            ).toTagMod
+                        },
                         Seq(
-                            ("sex",         s.female,   s.beta_female, "Sex", "Female", "Male"),
-                            ("spo2",        s.SpO2,     s.beta_spo2, "SpO2", ">= 90%", "< 90%"),
-                            ("toc",         s.ToC,      s.beta_toc, "T^oC", "< 37.3", ">= 37.3"),
-                            ("ntprobnp",    s.NTproBNP, s.beta_ntprobnp, "NT-proBNP (ng/L)", "< 1800", ">= 1800"),
-                        ).map{case (name, condition, beta, head, ifFalse, ifTrue) => {
+                            ("sex",         s.female,   s.beta_female, <.span("Sex"), "Female", "Male", "female/male."),
+                            ("spo2",        s.SpO2,     s.beta_spo2, <.span("SpO", <.sub("2")), "≥ 90%", "< 90%", "within 1 hour before or after hospital admission."),
+                            ("toc",         s.ToC,      s.beta_toc, <.span("Temp(°C/°F)"), "< 37.3/99.14", "≥ 37.3/99.14", "armpit temperature within 1 hour before or after hospital admission."),
+                            ("ntprobnp",    s.NTproBNP, s.beta_ntprobnp, <.span("NT-proBNP (ng/L)"), "< 1800", "≥ 1800", "within 24 hour before or after hospital admission."),
+                        ).map{case (name, condition, beta, head, ifFalse, ifTrue, help) => {
                             <.div(^.className:="column is-half",
                                 <.div(^.className:="columns is-mobile is-gapless",
-                                    <.div(^.className:="column is-half",
-                                        <.button(^.className:="button is-fullwidth is-rounded is-white", ^.onClick ==> update(name), head)
-                                    ),
-                                    <.div(^.className:="column is-one-quarter",
-                                        if(condition) {
-                                            <.button(^.className:="button is-fullwidth is-rounded is-danger", ^.onClick ==> update(name), ifTrue)
-                                        } else {
-                                            <.button(^.className:="button is-fullwidth is-rounded is-primary", ^.onClick ==> update(name), ifFalse)
-                                        }
-                                    ),
-                                    <.div(^.className:="column is-one-quarter",
-                                        <.button(^.className:="button is-fullwidth is-rounded is-light", ^.onClick ==> update(name), beta)
-                                    ),
+                                    if(s.help) {
+                                        <.div(^.className:="column",
+                                            <.span(^.className:="has-text-warning has-text-weight-bold", head),
+                                            <.span(^.className:="has-text-grey", ": "),
+                                            <.span(^.className:="has-text-info", help)
+                                        )
+                                    } else {
+                                        Seq(
+                                            <.div(^.className:="column is-5",
+                                                <.button(^.className:="button is-fullwidth is-rounded is-white", ^.onClick ==> update(name), head)
+                                            ),
+                                            <.div(^.className:="column is-4",
+                                                if(condition) {
+                                                    <.button(^.className:="button is-fullwidth is-rounded is-danger", ^.onClick ==> update(name), ifTrue)
+                                                } else {
+                                                    <.button(^.className:="button is-fullwidth is-rounded is-primary", ^.onClick ==> update(name), ifFalse)
+                                                }
+                                            ),
+                                            <.div(^.className:="column is-3",
+                                                <.button(^.className:="button is-fullwidth is-rounded is-light", ^.onClick ==> update(name), beta)
+                                            )
+                                        ).toTagMod
+                                    }
                                 )
                             )
                         }}.toTagMod
@@ -97,8 +126,8 @@ object STONP {
                     <.div(^.className:="level is-mobile",
                         <.div(^.className:="level-item has-text-centered",
                             <.div(
-                                <.p(^.className:="heading", "Predicted Death Rate"),
-                                <.p(^.className:="title", f"${s.deathRate}%.2f%%")
+                                <.p(^.className:="heading", "Predicted in-hospital death rate"),
+                                <.p(^.className:="title", f"${s.deathRate}%.1f%%")
                             )
                         ),
                         <.div(^.className:="level-item has-text-centered",
@@ -110,8 +139,13 @@ object STONP {
                     ),
                     <.hr(),
                     <.div(^.className:="content",
-                        <.p("Logit = Sum(beta) - 8.886"),
-                        <.p("Predicted Death Rate = (e^Logit) / (1 + e^Logit)")
+                        <.p("Predicted in-hospital death rate = (e", <.sup("Logit"), ") / (1 + e", <.sup("Logit"), ")"),
+                        <.p("Logit = Sum(Beta) - 7.938"),
+                        <.p("All measurements taken on admission."),
+                        <.ul(
+                            <.li("SpO", <.sub("2"), ": without oxygen supply."),
+                            <.li("Temp: axillary body temperature.")
+                        )
                     )
                 )
             )
@@ -119,7 +153,7 @@ object STONP {
     }
 
     def apply() = {
-        val C = ScalaComponent.builder[Unit]("Stonp")
+        val C = ScalaComponent.builder[Unit]("STONP")
         .initialState(State())
         .renderBackend[Backend]
         .build

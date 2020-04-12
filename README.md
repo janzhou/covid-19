@@ -1,1 +1,7 @@
-# covid-19
+# COVID-19
+
+## To Compile JS
+
+```
+sbt fullOptJS::webpack
+```

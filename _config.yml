@@ -1,0 +1,3 @@
+exclude: [project, src, build.sbt, LICENSE, README.md]
+gems:
+  - jekyll-redirect-from
