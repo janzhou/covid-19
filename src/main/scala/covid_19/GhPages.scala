@@ -4,7 +4,6 @@ import org.scalajs.dom.document
 
 object GhPages {
     def main(args: Array[String]):Unit = {
-        STONP.apply().renderIntoDOM( document.body )
-        println("covid 19!!!")
+        STONP.apply().renderIntoDOM( document.getElementById("stonp") )
     }
 }

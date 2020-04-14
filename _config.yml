@@ -1,3 +1,4 @@
 exclude: [project, src, build.sbt, LICENSE, README.md]
+google_analytics: UA-54043904-1
 gems:
   - jekyll-redirect-from
