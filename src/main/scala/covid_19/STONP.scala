@@ -55,7 +55,7 @@ object STONP {
                             <.span(^.className:="icon has-text-gray",
                                 <.i(^.className:="fas fa-virus")
                             ),
-                            " STONP--Prediction Model for In-hospital Death of Elderly COVID-19"
+                            " STONP--Prediction Model for In-hospital Death of Elderly COVID-19 Patients"
                         ),
                         <.p("(Apply to patients ≥75 Years of Age ONLY)")
                     ),
@@ -89,18 +89,22 @@ object STONP {
                             ).toTagMod
                         },
                         Seq(
-                            ("sex",         s.female,   s.beta_female, <.span("Sex"), "Female", "Male", "female/male."),
-                            ("spo2",        s.SpO2,     s.beta_spo2, <.span("SpO", <.sub("2")), "≥ 90%", "< 90%", "within 1 hour before or after hospital admission."),
-                            ("toc",         s.ToC,      s.beta_toc, <.span("Temp(°C/°F)"), "< 37.3/99.14", "≥ 37.3/99.14", "armpit temperature within 1 hour before or after hospital admission."),
-                            ("ntprobnp",    s.NTproBNP, s.beta_ntprobnp, <.span("NT-proBNP (ng/L)"), "< 1800", "≥ 1800", "within 24 hour before or after hospital admission."),
+                            ("sex",         s.female,   s.beta_female, <.span("Sex"), "Female", "Male", ""),
+                            ("spo2",        s.SpO2,     s.beta_spo2, <.span("SpO", <.sub("2")), "> 90%", "≤ 90%", "pulse oxygen saturation on room air when patient is admitted."),
+                            ("toc",         s.ToC,      s.beta_toc, <.span("Temp(°C/°F)"), "≤ 37.3/99.14", "> 37.3/99.14", "axillary temperature when patient is admitted."),
+                            ("ntprobnp",    s.NTproBNP, s.beta_ntprobnp, <.span("NT-proBNP (ng/L)"), "≤ 1800", "> 1800", "blood sample is taken when patient is admitted."),
                         ).map{case (name, condition, beta, head, ifFalse, ifTrue, help) => {
                             <.div(^.className:="column is-half",
                                 <.div(^.className:="columns is-mobile is-gapless",
                                     if(s.help) {
-                                        <.div(^.className:="column",
-                                            <.span(^.className:="has-text-warning has-text-weight-bold", head),
-                                            <.span(^.className:="has-text-grey", ": "),
-                                            <.span(^.className:="has-text-info", help)
+                                        if(help.length > 0) {
+                                            <.div(^.className:="column",
+                                                <.span(^.className:="has-text-warning has-text-weight-bold", head),
+                                                <.span(^.className:="has-text-grey", ": "),
+                                                <.span(^.className:="has-text-info", help)
+                                            )
+                                        } else <.div(^.className:="column",
+                                            <.span(^.className:="has-text-danger has-text-weight-bold", "All measurements are taken ON ADMISSION.")
                                         )
                                     } else {
                                         Seq(
@@ -126,7 +130,9 @@ object STONP {
                     <.div(^.className:="level is-mobile",
                         <.div(^.className:="level-item has-text-centered",
                             <.div(
-                                <.p(^.className:="heading", "Predicted in-hospital death rate"),
+                                <.p(^.className:="heading is-hidden-mobile", "Predicted in-hospital death probability"),
+                                <.p(^.className:="heading is-hidden-tablet", "Predicted in-hospital"),
+                                <.p(^.className:="heading is-hidden-tablet", "death probability"),
                                 <.p(^.className:="title", f"${s.deathRate}%.1f%%")
                             )
                         ),
@@ -139,13 +145,8 @@ object STONP {
                     ),
                     <.hr(),
                     <.div(^.className:="content",
-                        <.p("Predicted in-hospital death rate = (e", <.sup("Logit"), ") / (1 + e", <.sup("Logit"), ")"),
-                        <.p("Logit = Sum(Beta) - 7.938"),
-                        <.p("All measurements taken on admission."),
-                        <.ul(
-                            <.li("SpO", <.sub("2"), ": without oxygen supply."),
-                            <.li("Temp: axillary body temperature.")
-                        )
+                        <.p("Predicted in-hospital death probability = (e", <.sup("Logit"), ") / (1 + e", <.sup("Logit"), ")"),
+                        <.p("Logit = Sum(Beta) - 7.938")
                     )
                 )
             )
